@@ -1,27 +1,30 @@
-`# To package up as executable, run this in command prompt: 
+# To package up as executable, run this in command prompt:
 # pyinstaller --onefile --hidden-import=colorama --icon=favicon.ico autofill.py
+import os
+import sys
+import time
+import math
+import queue
+
+from functools import partial
+from concurrent.futures import ThreadPoolExecutor
+
+import requests
 import colorama
-from webdriver_manager.chrome import ChromeDriverManager
+import numpy as np
+import xml.etree.ElementTree as ET
+
+from tqdm import tqdm
+from selenium import webdriver
 from selenium.common.exceptions import (
     NoAlertPresentException,
     UnexpectedAlertPresentException,
     NoSuchElementException,
     TimeoutException)
-from selenium.webdriver.support.expected_conditions import invisibility_of_element
-from selenium.webdriver.support.ui import WebDriverWait, Select
-from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-import time
-import os
-import sys
-import xml.etree.ElementTree as ET
-import numpy as np
-import requests
-from tqdm import tqdm
-from concurrent.futures import ThreadPoolExecutor
-from functools import partial
-import queue
-import math
+from selenium.webdriver.support.ui import WebDriverWait, Select
+from selenium.webdriver.support.expected_conditions import invisibility_of_element
+from webdriver_manager.chrome import ChromeDriverManager
 
 """
 Drive File Info API
@@ -236,7 +239,7 @@ def download_card(bar: tqdm, cardinfo):
             # this is pretty fucking stupid but if it works it works
             if filename == "":
                 raise IndexError
-        
+
         except IndexError:
             # Can't retrieve filename from argument (XML) - retrieve it from a google app query instead
             # Credit to https://tanaikech.github.io/2017/03/20/download-files-without-authorization-from-google-drive/
@@ -252,14 +255,14 @@ def download_card(bar: tqdm, cardinfo):
                 # Failed to retrieve image name - add it to error queue
                 print("cant get filename so gonna exih")
                 q_error.put("Failed to retrieve filename for image with ID < {} >".format(file_id))
-        
+
         # in the case of file name request failing, filepath will be referenced before assignment unless we do this
-        filepath = ""  
+        filepath = ""
         if filename:
             # Split the filename on extension and add in the ID as well
             # The filename with and without the ID in parentheses is checked for, so if the user downloads the image from
             # Google Drive without modifying the filename, it should work as expected
-            # However, looking for the file with the ID in parentheses is preferred because it eliminates the possibility 
+            # However, looking for the file with the ID in parentheses is preferred because it eliminates the possibility
             # of filename clashes between different images
             filename_split = filename.rsplit(".", 1)
             filename_id = filename_split[0] + " (" + file_id + ")." + filename_split[1]
@@ -275,7 +278,7 @@ def download_card(bar: tqdm, cardinfo):
             # Download the image if it doesn't exist, or if it does exist but it's empty
             if (not os.path.isfile(filepath)) or os.path.getsize(filepath) <= 0:
                 # Google script request for file contents
-                # Set the request's timeout to 30 seconds, so if the server decides to not respond, we can 
+                # Set the request's timeout to 30 seconds, so if the server decides to not respond, we can
                 # move on without stopping the whole autofill process    )) > 0 and text_to_list(cardinfo[1])[0] > 10:
                 try:
 
@@ -283,7 +286,7 @@ def download_card(bar: tqdm, cardinfo):
                     attempt_counter = 0
                     image_downloaded = False
                     while attempt_counter < 5 and not image_downloaded:
-                        
+
                         with requests.post(
                             "https://script.google.com/macros/s/AKfycbzzCWc2x3tfQU1Zp45LB1P19FNZE-4njwzfKT5_Rx399h-5dELZWyvf/exec",
                             data={"id": file_id},
@@ -300,7 +303,7 @@ def download_card(bar: tqdm, cardinfo):
                                 image_downloaded = True
                             else:
                                 attempt_counter += 1
-                    
+
                     if not image_downloaded:
                         # Tried to download image three times and never got any data, add to error queue
                         # print("file contents empty error")
@@ -317,7 +320,7 @@ def download_card(bar: tqdm, cardinfo):
         if os.path.isfile(filepath) and os.path.getsize(filepath) > 0 and filename:
             # Cards are normally put onto the queue as tuples of the image filepath and slots
             card_item = (filepath, text_to_list(cardinfo[1]))
-        
+
     except Exception as e:
         # Really wanna put the nail in the coffin of stalling when an error occurs during image downloads
         # Any uncaught exceptions just get ignored and the card is skipped, adding the empty entry onto the appropriate queue
@@ -459,7 +462,7 @@ if __name__ == "__main__":
 
     print("Elapsed time: ", end='')
     if hours > 0:
-        print("{} hours, ".format(hours), end='')    
+        print("{} hours, ".format(hours), end='')
     print("{} minutes and {} seconds.".format(mins, secs))
 
     input("Please review the order and ensure everything is correct before placing \n"
