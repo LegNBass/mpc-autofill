@@ -2,8 +2,9 @@
 # pyinstaller --onefile --hidden-import=colorama --icon=favicon.ico autofill.py
 import os
 import sys
-import time
+import json
 import math
+import time
 import queue
 
 from functools import partial
@@ -84,17 +85,7 @@ if not os.path.exists(cards_folder):
     os.mkdir(cards_folder)
 
 def text_to_list(input_text):
-    # Helper function to translate strings like "[2, 4, 5, 6]" into lists
-    if input_text == "":
-        return []
-    return [int(x) for x in input_text.strip('][').replace(" ", "").split(',')]
-
-def text_to_list(input_text):
-    # Helper function to translate strings like "[2, 4, 5, 6]" into lists
-    if input_text == "":
-        return []
-    return [int(x) for x in input_text.strip('][').replace(" ", "").split(',')]
-
+    return json.loads(input_text)
 
 def fill_cards(bar: tqdm, driver, root):
     # Load Custom Game Cards (63mm x 88mm) page
